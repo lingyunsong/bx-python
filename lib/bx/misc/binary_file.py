@@ -4,6 +4,7 @@ Wrappers for doing binary IO on file-like objects
 
 import numpy
 import struct
+import sys
 
 ## Standard size:
 ## short is 8 bits
@@ -20,9 +21,8 @@ class BinaryFileReader( object ):
     Currently this is not heavily optimized (it uses the `struct` module to
     unpack)
     """    
-    def __init__( self, file, magic = None ):
-        self.is_little_endian = False
-        self.endian_code = ">"
+    def __init__( self, file, magic = None, is_little_endian = False ):
+        self.is_little_endian = is_little_endian
         self.file = file
         if magic is not None:
             # Attempt to read magic number and chuck endianess
@@ -31,9 +31,15 @@ class BinaryFileReader( object ):
                 pass
             elif struct.unpack( "<I", bytes )[0] == magic:
                 self.is_little_endian = True
-                self.endian_code = "<"
             else:
-                raise BadMagic( "File does not have expected magic number" )
+                raise BadMagic( "File does not have expected magic number" )                
+        # Set endian code
+        if self.is_little_endian:
+            self.endian_code = "<"
+            self.byteswap_needed = ( sys.byteorder != "little" )
+        else:
+            self.endian_code = ">"
+            self.byteswap_needed = ( sys.byteorder != "big" )
         
     def unpack( self, format, buffer, byte_count=None ):
         pattern = "%s%s" % ( self.endian_code, format )
@@ -65,13 +71,19 @@ class BinaryFileReader( object ):
         return ''.join( rval )
         
     def read_raw_array( self, dtype, size ):
-        return numpy.fromfile( self.file, dtype=dtype, count=size )
+        a = numpy.fromfile( self.file, dtype=dtype, count=size )
+        if self.byteswap_needed:
+            a.byteswap()
+        return a
     
     def read( self, byte_count=1 ):
         return self.file.read( byte_count )
         
     def tell( self ):
         return self.file.tell()
+        
+    def skip( self, count ):
+        self.file.seek( count, 1 )
         
     def seek( self, pos, whence=0 ):
         return self.file.seek( pos, whence )
@@ -96,9 +108,12 @@ class BinaryFileWriter( object ):
     Currently this is not heavily optimized (it uses the `struct` module to
     unpack)
     """    
-    def __init__( self, file, magic = None ):
-        # Always write in network byte order
-        self.endian_code = ">"
+    def __init__( self, file, magic = None, is_little_endian = False ):
+        self.is_little_endian = is_little_endian
+        if self.is_little_endian:
+            self.endian_code = "<"
+        else:
+            self.endian_code = ">"
         self.file = file
         if magic is not None:
             self.write_uint32( magic )
