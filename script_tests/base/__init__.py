@@ -24,7 +24,7 @@ class TestFile( object ):
         else:
             self.tempfile = False
     def check( self, other_fname ):
-        assert filecmp.cmp( self.filename, other_fname ), "Files do no match (%s, %s)" % ( self.filename, other_fname )
+        assert filecmp.cmp( self.filename, other_fname ), "Files do not match (%s, %s)" % ( self.filename, other_fname )
     def __del__( self ):
         if self.tempfile:
             os.remove( self.filename )
@@ -73,7 +73,10 @@ class BaseScriptTest( object ):
         real_command = string.Template( command_line ).substitute( all_fnames )
         # Augment PYTHONPATH, bit of a HACK here! need to suck this data from setuptools or something?
         env = dict( os.environ )
-        env['PYTHONPATH'] = "./lib:" + env['PYTHONPATH']
+        if 'PYTHONPATH' in env:
+            env['PYTHONPATH'] = "./lib:" + env['PYTHONPATH']
+        else:
+            env['PYTHONPATH'] = "./lib"
         # Run the command
         assert subprocess.call( real_command, stdin=stdin, stdout=stdout, stderr=stderr, shell=True, env=env ) == 0
         # Check the outputs
