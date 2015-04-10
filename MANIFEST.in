@@ -1,0 +1,7 @@
+include distribute_setup.py
+include LICENSE
+recursive-include src *.h
+recursive-include src *.c
+recursive-include lib *.h
+recursive-include lib *.c
+recursive-include lib *.pyx
