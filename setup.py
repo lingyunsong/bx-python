@@ -4,9 +4,11 @@ if sys.version_info < (2, 4):
     print >> sys.stderr, "ERROR: bx-python requires python 2.4 or greater"
     sys.exit()
 
-# Automatically download setuptools if not available
-from distribute_setup import use_setuptools
-use_setuptools()
+try:
+    from setuptools import setup, find_packages
+except ImportError:
+    from ez_setup import use_setuptools
+    use_setuptools()
 
 from setuptools import *
 from glob import glob
@@ -19,7 +21,7 @@ except:
        
 def main():
     setup(  name = "bx-python",
-            version = "0.7.2",
+            version = "0.7.3",
             py_modules = [ 'psyco_full' ],
             packages = find_packages( 'lib' ),
             package_dir = { '': 'lib' },
